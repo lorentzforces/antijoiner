@@ -1,0 +1,11 @@
+.gradle
+.project
+.settings
+.classpath
+.idea
+
+# Ignore Gradle build output directory
+bin
+build
+modules
+out
