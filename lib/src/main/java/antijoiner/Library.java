@@ -2,15 +2,15 @@
 package antijoiner;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
+
 
 // TODO: rename this
 // TODO: javadoc the hell out of this, including explanations for type parameters
@@ -24,7 +24,13 @@ public class Library {
 	 * representing the primary key.
 	 */
 	public static <T> AntijoinResult<T, T> antijoin(Collection<T> left, Collection<T> right) {
-		return antijoin(left, right, Function.identity(), Function.identity());
+		return antijoin(
+			left,
+			right,
+			Function.identity(),
+			Function.identity(),
+			NullValuePolicy.RETAIN_NONE
+		);
 	}
 
 	/**
@@ -36,35 +42,45 @@ public class Library {
 		Collection<T> right,
 		Function<T, X> accessor
 	) {
-		return antijoin(left, right, accessor, accessor);
+		return antijoin(left, right, accessor, accessor, NullValuePolicy.RETAIN_NONE);
 	}
 
-	// TODO: think about nulls: since we use a hashmap, nulls are awkward
-	// maybe an enum with something like:
-	// NO_RETAIN
-	// RETAIN_LEFT
-	// RETAIN_RIGHT
 	public static <L, R, X> AntijoinResult<L, R> antijoin(
 		Collection<L> left,
 		Collection<R> right,
 		Function<L, X> leftAccessor,
-		Function<R, X> rightAccessor
+		Function<R, X> rightAccessor,
+		NullValuePolicy nullPolicy
 	) {
-		Set<L> leftComplement = new HashSet<>();
-		Map<X, R> rightMapping =
-			right.stream()
-			.filter(Objects::nonNull)
-			.collect(toMap(rightAccessor, Function.identity()));
+		Map<X, R> rightMapping = new HashMap<>();
+		List<R> rightNulls = new ArrayList<>();
+		for (R rightEntry : right) {
+			if (right == null) {
+				throw new NullPointerException("null object on the right side of the join");
+			} else if (rightAccessor.apply(rightEntry) == null) {
+				rightNulls.add(rightEntry);
+			} else {
+				rightMapping.put(rightAccessor.apply(rightEntry), rightEntry);
+			}
+		}
 
-		Set<JoinedPair<L, R>> joinedPairs = new HashSet<>();
+		List<JoinedPair<L, R>> joinedPairs = new ArrayList<>();
+		List<L> leftNulls = new ArrayList<>();
+		List<L> leftComplement = new ArrayList<>();
 
 		for (L leftEntry : left) {
-			R rightEntry = rightMapping.remove(leftAccessor.apply(leftEntry));
-
-			if (rightEntry == null) {
-				leftComplement.add(leftEntry);
+			if (leftEntry == null) {
+				throw new NullPointerException("null object on the left side of the join");
+			} else if (leftAccessor.apply(leftEntry) == null) {
+				leftNulls.add(leftEntry);
 			} else {
-				joinedPairs.add(new JoinedPair<>(leftEntry, rightEntry));
+				R rightEntry = rightMapping.remove(leftAccessor.apply(leftEntry));
+
+				if (rightEntry == null) {
+					leftComplement.add(leftEntry);
+				} else {
+					joinedPairs.add(new JoinedPair<>(leftEntry, rightEntry));
+				}
 			}
 		}
 
@@ -75,16 +91,30 @@ public class Library {
 			rightMapping.entrySet()
 			.stream()
 			.map(Entry::getValue)
-			.collect(toSet());
+			.collect(toList());
+
+		if (
+			nullPolicy == NullValuePolicy.RETAIN_LEFT
+			|| nullPolicy == NullValuePolicy.RETAIN_FULL
+		) {
+			result.leftComplement.addAll(leftNulls);
+		}
+
+		if (
+			nullPolicy == NullValuePolicy.RETAIN_RIGHT
+			|| nullPolicy == NullValuePolicy.RETAIN_FULL
+		) {
+			result.rightComplement.addAll(rightNulls);
+		}
 
 		return result;
 	}
 
 	// TODO: probably move these both out into their own source files
 	public static class AntijoinResult <L, R> {
-		public Set<L> leftComplement;
-		public Set<JoinedPair<L, R>> joinedPairs;
-		public Set<R> rightComplement;
+		public List<L> leftComplement;
+		public List<JoinedPair<L, R>> joinedPairs;
+		public List<R> rightComplement;
 	}
 
 	public static class JoinedPair <L, R> {
@@ -95,6 +125,13 @@ public class Library {
 			this.left = left;
 			this.right = right;
 		}
+	}
+
+	public static enum NullValuePolicy {
+		RETAIN_NONE,
+		RETAIN_LEFT,
+		RETAIN_RIGHT,
+		RETAIN_FULL
 	}
 
 }
