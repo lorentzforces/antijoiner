@@ -27,6 +27,23 @@ public class Library {
 		return antijoin(left, right, Function.identity(), Function.identity());
 	}
 
+	/**
+	 * Convenience method for the special case where items on both sides of the antijoin are the
+	 * same type.
+	 */
+	public static <T, X> AntijoinResult<T, T> antijoin(
+		Collection<T> left,
+		Collection<T> right,
+		Function<T, X> accessor
+	) {
+		return antijoin(left, right, accessor, accessor);
+	}
+
+	// TODO: think about nulls: since we use a hashmap, nulls are awkward
+	// maybe an enum with something like:
+	// NO_RETAIN
+	// RETAIN_LEFT
+	// RETAIN_RIGHT
 	public static <L, R, X> AntijoinResult<L, R> antijoin(
 		Collection<L> left,
 		Collection<R> right,
@@ -38,7 +55,7 @@ public class Library {
 			right.stream()
 			.filter(Objects::nonNull)
 			.collect(toMap(rightAccessor, Function.identity()));
-		// TODO: check sizes to see if we got passed a null, maybe error if we got one?
+
 		Set<JoinedPair<L, R>> joinedPairs = new HashSet<>();
 
 		for (L leftEntry : left) {

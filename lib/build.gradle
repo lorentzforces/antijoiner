@@ -14,3 +14,24 @@ compileJava {
 	sourceCompatibility = 8
 	targetCompatibility = 8
 }
+
+test {
+	testLogging {
+		// always run all tests even when nothing's changed
+		outputs.upToDateWhen { false }
+		// actually show messages from tests
+		showStandardStreams = true
+
+		// TODO: make this nicer
+		// print summary stats of test runs
+		afterSuite { desc, result ->
+			if (!desc.parent) { // will match the outermost suite
+				println "tests passed: ${result.successfulTestCount}"
+				println "tests failed: ${result.failedTestCount}"
+				if (result.skippedTestCount > 0) {
+					println "tests skipped: ${result.skippedTestCount}"
+				}
+			}
+		}
+	}
+}
