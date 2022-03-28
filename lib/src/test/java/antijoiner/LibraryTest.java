@@ -16,8 +16,7 @@ import static org.junit.Assert.*;
 public class LibraryTest {
 
 	/**
-	 * Calculating the [nametbd] with plain {@Link java.lang.Integer} objects produces the
-	 * expected results.
+	 * Calculating the [nametbd] with plain {@Link Integer} objects produces the expected results.
 	 */
 	@Test
 	public void sameBasicType() {
@@ -99,7 +98,7 @@ public class LibraryTest {
 	}
 
 	/**
-	 * Calculating the [nametbd] retains null values as specified
+	 * Calculating the [nametbd] retains {@code null} values as specified
 	 */
 	@Test
 	public void nullValueRetainment() {
@@ -142,6 +141,35 @@ public class LibraryTest {
 			);
 		assertEquals(testData.unmatchedLeftCount + 2, resultsRetainFull.leftComplement.size());
 		assertEquals(testData.unmatchedRightCount + 3, resultsRetainFull.rightComplement.size());
+	}
+
+	/**
+	 * Passing a {@code null} object (not an object with a {@code null} accessed value) in one of
+	 * the collections throws a {@link NullPointerException}.
+	 */
+	@Test
+	public void nullObjectsThrowExceptions() {
+		TestData<NonBasicType> hasNullOnLeft = buildNonBasicSets(3, 1);
+		hasNullOnLeft.left.add(null);
+
+		NullPointerException expectedExceptionFromLeft = null;
+		try {
+			Library.antijoin(hasNullOnLeft.left, hasNullOnLeft.right, NonBasicType::getValue);
+		} catch (NullPointerException e) {
+			expectedExceptionFromLeft = e;
+		}
+		assertNotNull(expectedExceptionFromLeft);
+
+		TestData<NonBasicType> hasNullOnRight = buildNonBasicSets(3, 1);
+		hasNullOnRight.right.add(null);
+
+		NullPointerException expectedExceptionFromRight = null;
+		try {
+			Library.antijoin(hasNullOnRight.left, hasNullOnRight.right, NonBasicType::getValue);
+		} catch (NullPointerException e) {
+			expectedExceptionFromRight = e;
+		}
+		assertNotNull(expectedExceptionFromRight);
 	}
 
 	private static <T> void verifyExactResultsSize(
