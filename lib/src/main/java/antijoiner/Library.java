@@ -10,7 +10,6 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 
-
 // TODO: rename this
 // TODO: javadoc the hell out of this, including explanations for type parameters
 public class Library {

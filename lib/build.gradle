@@ -1,13 +1,13 @@
 plugins {
-    id 'java-library'
+	id 'java-library'
 }
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.13.2'
+	testImplementation 'junit:junit:4.13.2'
 }
 
 compileJava {

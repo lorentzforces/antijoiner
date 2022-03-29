@@ -1,16 +1,12 @@
-// Copyright 2022 Lorentz Aberg subject to license details in {project root}/LICENSE.txt
 package antijoiner;
 
 import antijoiner.Library.AntijoinResult;
 import antijoiner.Library.NullValuePolicy;
-import java.util.List;
-import java.util.Random;
+import antijoiner.testutils.NonBasicType;
+import antijoiner.testutils.TestData;
 import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
 import org.junit.Test;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
 
 public class LibraryTest {
@@ -25,7 +21,7 @@ public class LibraryTest {
 		AntijoinResult<Integer, Integer> results =
 			Library.antijoin(testData.left, testData.right);
 
-		verifyExactResultsSize(results, testData);
+		testData.verifyExactResultsSize(results);
 
 		for (int i = 0; i < testData.unmatchedLeftCount; i++) {
 			Integer objectValue = Integer.valueOf(i);
@@ -67,7 +63,7 @@ public class LibraryTest {
 				NullValuePolicy.RETAIN_NONE
 			);
 
-		verifyExactResultsSize(results, testData);
+		testData.verifyExactResultsSize(results);
 
 		for (int i = 0; i < testData.unmatchedLeftCount; i++) {
 			Integer objectValue = Integer.valueOf(i);
@@ -172,69 +168,12 @@ public class LibraryTest {
 		assertNotNull(expectedExceptionFromRight);
 	}
 
-	private static <T> void verifyExactResultsSize(
-		AntijoinResult<T, T> results,
-		TestData<T> testData
-	) {
-		assertEquals(testData.unmatchedLeftCount, results.leftComplement.size());
-		assertEquals(testData.overlap, results.joinedPairs.size());
-		assertEquals(testData.unmatchedRightCount, results.rightComplement.size());
-	}
-
 	private static TestData<Integer> buildBasicSets(int numberOfItems, int overlap) {
 		return new TestData<>(numberOfItems, overlap, x -> Integer.valueOf(x));
 	}
 
 	private static TestData<NonBasicType> buildNonBasicSets(int numberOfItems, int overlap) {
 		return new TestData<>(numberOfItems, overlap, x -> new NonBasicType(x));
-	}
-
-	private static class TestData<T> {
-
-		final List<T> left;
-		final List<T> right;
-		final int totalItems;
-		final int overlap;
-		final int unmatchedLeftCount;
-		final int unmatchedRightCount;
-
-		public TestData(int totalItems, int overlap, IntFunction<T> generator) {
-			assert(overlap <= totalItems);
-
-			Random rng = new Random();
-
-			this.totalItems = totalItems;
-			this.overlap = overlap;
-
-			int overlapOffset = rng.nextInt(totalItems - overlap);
-			this.unmatchedLeftCount = overlapOffset;
-			this.unmatchedRightCount = this.totalItems - (unmatchedLeftCount + overlap);
-
-			this.left = IntStream.range(0, overlapOffset).mapToObj(generator).collect(toList());
-			this.right =
-				IntStream.range(overlapOffset + overlap, totalItems)
-				.mapToObj(generator).collect(toList());
-
-			IntStream.range(overlapOffset, overlapOffset + overlap).forEach(x -> {
-				left.add(generator.apply(x));
-				right.add(generator.apply(x));
-			});
-		}
-
-	}
-
-	private static class NonBasicType {
-
-		private final Integer value;
-
-		public NonBasicType(Integer value) {
-			this.value = value;
-		}
-
-		public Integer getValue() {
-			return value;
-		}
-
 	}
 
 }
