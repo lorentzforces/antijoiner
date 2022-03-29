@@ -1,4 +1,3 @@
-// Copyright 2022 Lorentz Aberg subject to license details in {project root}/LICENSE.txt
 package antijoiner;
 
 import java.util.Collection;
